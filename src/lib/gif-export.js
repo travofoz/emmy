@@ -227,7 +227,7 @@ function loadImage(url) {
  * @param {number} [options.scale] - downscale factor (0-1), auto-calculated if not set
  * @param {number} [options.maxColors] - max palette colors (default 256)
  * @param {number} [options.repeat] - loop count (0 = loop forever, default 0)
- * @returns {Promise<Blob>}
+ * @returns {Promise<{ blob: Blob, effectiveScale: number }>}
  */
 export async function encodeGIF(slides, options = {}) {
 	if (slides.length === 0) throw new Error('No slides to encode');
@@ -285,7 +285,7 @@ export async function encodeGIF(slides, options = {}) {
 	encoder.finish();
 	const gifBytes = encoder.bytes();
 
-	return new Blob([gifBytes], { type: 'image/gif' });
+	return { blob: new Blob([gifBytes], { type: 'image/gif' }), effectiveScale: scale };
 }
 
 /**
@@ -311,14 +311,13 @@ export async function exportAndCommitGIF(octokit, owner, repo, slides, options =
 	const gifPath = `images/${gifFilename}`;
 	const jsonPath = `images/${jsonFilename}`;
 
-	// Encode the GIF
-	const blob = await encodeGIF(slides, { scale });
+	// Encode the GIF — returns blob + the effective scale used
+	const { blob, effectiveScale } = await encodeGIF(slides, { scale });
 
 	// Get the first slide's dimensions for metadata
 	const { width, height } = slides[0];
 
 	// Use the scaled dimensions
-	const effectiveScale = scale || estimateGifSize(slides, 20).suggestedScale;
 	const scaledWidth = Math.round(width * effectiveScale);
 	const scaledHeight = Math.round(height * effectiveScale);
 
