@@ -229,8 +229,7 @@ function loadImage(url) {
 export async function encodeGIF(slides, options = {}) {
 	if (slides.length === 0) throw new Error('No slides to encode');
 
-	const { default: gifenc } = await import('gifenc');
-	const { quantize, applyPalette } = gifenc;
+	const { GIFEncoder, quantize, applyPalette } = await import('gifenc');
 
 	const maxColors = options.maxColors || 256;
 	const repeat = options.repeat ?? 0;
@@ -250,7 +249,7 @@ export async function encodeGIF(slides, options = {}) {
 	// But for better quality, we could quantize all frames together. Let's use local palettes
 	// per frame which is simpler and works well for screenshots.
 
-	const encoder = new gifenc.GIFEncoder({ auto: true });
+	const encoder = GIFEncoder({ auto: true });
 	let isFirst = true;
 
 	for (let i = 0; i < slides.length; i++) {
