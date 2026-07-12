@@ -11,10 +11,14 @@ export const githubToken = writable(
 // Persist to localStorage whenever the token changes
 githubToken.subscribe((value) => {
 	if (typeof localStorage !== 'undefined') {
-		if (value) {
-			localStorage.setItem('emmy_gh_token', value);
-		} else {
-			localStorage.removeItem('emmy_gh_token');
+		try {
+			if (value) {
+				localStorage.setItem('emmy_gh_token', value);
+			} else {
+				localStorage.removeItem('emmy_gh_token');
+			}
+		} catch {
+			// localStorage may be unavailable (quota, private mode, etc.)
 		}
 	}
 });
@@ -29,10 +33,14 @@ export const githubRepo = writable(
 
 githubRepo.subscribe((value) => {
 	if (typeof localStorage !== 'undefined') {
-		if (value) {
-			localStorage.setItem('emmy_gh_repo', value);
-		} else {
-			localStorage.removeItem('emmy_gh_repo');
+		try {
+			if (value) {
+				localStorage.setItem('emmy_gh_repo', value);
+			} else {
+				localStorage.removeItem('emmy_gh_repo');
+			}
+		} catch {
+			// localStorage may be unavailable (quota, private mode, etc.)
 		}
 	}
 });

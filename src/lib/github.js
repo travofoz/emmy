@@ -4,6 +4,24 @@ import { Octokit } from 'octokit';
  * @typedef {import('octokit').Octokit} OctokitInstance
  */
 
+function base64Decode(base64) {
+	const binary = atob(base64.replace(/\n/g, ''));
+	const bytes = new Uint8Array(binary.length);
+	for (let i = 0; i < binary.length; i++) {
+		bytes[i] = binary.charCodeAt(i);
+	}
+	return new TextDecoder().decode(bytes);
+}
+
+function base64Encode(str) {
+	const bytes = new TextEncoder().encode(str);
+	let binary = '';
+	for (let i = 0; i < bytes.length; i++) {
+		binary += String.fromCharCode(bytes[i]);
+	}
+	return btoa(binary);
+}
+
 /**
  * Create an Octokit client from a GitHub Personal Access Token.
  * Returns null if no token is provided.
@@ -46,13 +64,8 @@ export async function getFile(octokit, owner, repo, path) {
 		});
 		const data = resp.data;
 		if ('content' in data && 'sha' in data) {
-			const binaryStr = atob(data.content.replace(/\n/g, ''));
-			const bytes = new Uint8Array(binaryStr.length);
-			for (let i = 0; i < binaryStr.length; i++) {
-				bytes[i] = binaryStr.charCodeAt(i);
-			}
 			return {
-				content: new TextDecoder('utf-8').decode(bytes),
+				content: base64Decode(data.content),
 				sha: data.sha
 			};
 		}
@@ -77,19 +90,12 @@ export async function getFile(octokit, owner, repo, path) {
  * @returns {Promise<{ sha: string, commit: object }>}
  */
 export async function putFile(octokit, owner, repo, path, content, message, sha) {
-	const bytes = new TextEncoder().encode(content);
-	let binaryStr = '';
-	for (let i = 0; i < bytes.byteLength; i++) {
-		binaryStr += String.fromCharCode(bytes[i]);
-	}
-	const base64Content = btoa(binaryStr);
-
 	const resp = await octokit.rest.repos.createOrUpdateFileContents({
 		owner,
 		repo,
 		path,
 		message,
-		content: base64Content,
+		content: base64Encode(content),
 		sha
 	});
 	return {

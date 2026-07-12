@@ -22,7 +22,8 @@
 		githubRepo.set(null);
 	}
 
-	function saveConnect() {
+	function saveConnect(e) {
+		e.preventDefault();
 		connectError = '';
 		if (!tokenInput.trim()) {
 			connectError = 'Token is required.';
@@ -143,8 +144,8 @@
 			</div>
 
 			<div class="modal-action">
-				<button type="button" class="btn btn-ghost" onclick={(e) => { e.preventDefault(); showConnectModal = false; }}>Cancel</button>
-				<button type="button" class="btn btn-primary" onclick={(e) => { e.preventDefault(); saveConnect(); }}>Connect</button>
+				<button type="button" class="btn btn-ghost" onclick={() => (showConnectModal = false)}>Cancel</button>
+				<button type="button" class="btn btn-primary" onclick={saveConnect}>Connect</button>
 			</div>
 		</div>
 	</div>
