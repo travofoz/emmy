@@ -24,19 +24,19 @@
 	let svgEl = $state(null);
 
 	/**
-	 * Get mouse/touch coordinates relative to the SVG overlay.
+	 * Get pointer coordinates relative to the SVG overlay.
+	 * Uses Pointer Events (unified mouse + touch) so e.clientX/e.clientY
+	 * are always available directly.
 	 */
 	function getCoords(e) {
 		if (!svgEl) return { x: 0, y: 0 };
 		const rect = svgEl.getBoundingClientRect();
-		const clientX = e.touches?.[0]?.clientX ?? e.clientX;
-		const clientY = e.touches?.[0]?.clientY ?? e.clientY;
 		// Scale from display pixels to image pixels
 		const scaleX = imageWidth / rect.width;
 		const scaleY = imageHeight / rect.height;
 		return {
-			x: (clientX - rect.left) * scaleX,
-			y: (clientY - rect.top) * scaleY
+			x: (e.clientX - rect.left) * scaleX,
+			y: (e.clientY - rect.top) * scaleY
 		};
 	}
 
@@ -248,14 +248,11 @@
 		<svg
 			bind:this={svgEl}
 			viewBox="0 0 {imageWidth} {imageHeight}"
-			style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: {activeTool === 'select' ? 'default' : 'crosshair'};"
-			onmousedown={handlePointerDown}
-			onmousemove={handlePointerMove}
-			onmouseup={handlePointerUp}
-			onmouseleave={handlePointerUp}
-			ontouchstart={handlePointerDown}
-			ontouchmove={handlePointerMove}
-			ontouchend={handlePointerUp}
+			style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: {activeTool === 'select' ? 'default' : 'crosshair'}; touch-action: none;"
+			onpointerdown={handlePointerDown}
+			onpointermove={handlePointerMove}
+			onpointerup={handlePointerUp}
+			onpointerleave={handlePointerUp}
 		>
 			<!-- Existing shapes -->
 			{#each shapes as shape (shape.id)}

@@ -1,5 +1,5 @@
 import { a as attr_style, c as store_get, d as html, i as attr_class, l as stringify, m as escape_html, o as derived, p as attr, s as ensure_array_like, u as unsubscribe_stores } from "../../chunks/internal.js";
-import { n as isConnected } from "../../chunks/stores.js";
+import { r as isConnected } from "../../chunks/stores.js";
 //#region src/lib/gallery.js
 /**
 * Filter gallery entries by tag (case-insensitive) and/or search text (in caption/id/tags).
@@ -60,33 +60,46 @@ function renderAnnotationsSVG(annotations, imageWidth, imageHeight) {
 * @returns {string}
 */
 function renderShapeSVG(shape) {
-	const stroke = shape.strokeColor || DEFAULT_STYLES.strokeColor;
-	const style = `stroke="${stroke}" stroke-width="${shape.strokeWidth || DEFAULT_STYLES.strokeWidth}" fill="${isTransparent(shape.fillColor) ? shape.type === "text" ? stroke : "none" : shape.fillColor}" opacity="${shape.opacity ?? DEFAULT_STYLES.opacity}"`;
+	const style = `stroke="${escapeAttr(shape.strokeColor, DEFAULT_STYLES.strokeColor)}" stroke-width="${escapeAttr(shape.strokeWidth, DEFAULT_STYLES.strokeWidth)}" fill="${escapeAttr(isTransparent(shape.fillColor) ? shape.type === "text" ? shape.strokeColor || DEFAULT_STYLES.strokeColor : "none" : shape.fillColor || "none")}" opacity="${escapeAttr(shape.opacity, DEFAULT_STYLES.opacity)}"`;
 	switch (shape.type) {
-		case "rect": return `<rect x="${shape.x}" y="${shape.y}" width="${shape.width}" height="${shape.height}" ${style} />`;
+		case "rect": return `<rect x="${escapeAttr(shape.x)}" y="${escapeAttr(shape.y)}" width="${escapeAttr(shape.width)}" height="${escapeAttr(shape.height)}" ${style} />`;
 		case "arrow": {
-			const dx = (shape.endX || 0) - shape.x;
-			const dy = (shape.endY || 0) - shape.y;
+			const x1 = Number(shape.x) || 0;
+			const y1 = Number(shape.y) || 0;
+			const x2 = Number(shape.endX) || 0;
+			const y2 = Number(shape.endY) || 0;
+			const dx = x2 - x1;
+			const dy = y2 - y1;
 			const angle = Math.atan2(dy, dx);
 			const headLen = Math.min(12, Math.sqrt(dx * dx + dy * dy) * .3);
 			const headAngle = Math.PI / 6;
-			const x1 = shape.x;
-			const y1 = shape.y;
-			const x2 = shape.endX || 0;
-			const y2 = shape.endY || 0;
 			const hx1 = x2 - headLen * Math.cos(angle - headAngle);
 			const hy1 = y2 - headLen * Math.sin(angle - headAngle);
 			const hx2 = x2 - headLen * Math.cos(angle + headAngle);
 			const hy2 = y2 - headLen * Math.sin(angle + headAngle);
-			return [`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" ${style} />`, `<polygon points="${x2},${y2} ${hx1},${hy1} ${hx2},${hy2}" ${style} />`].join("\n");
+			return [`<line x1="${escapeAttr(x1)}" y1="${escapeAttr(y1)}" x2="${escapeAttr(x2)}" y2="${escapeAttr(y2)}" ${style} />`, `<polygon points="${escapeAttr(x2)},${escapeAttr(y2)} ${escapeAttr(hx1)},${escapeAttr(hy1)} ${escapeAttr(hx2)},${escapeAttr(hy2)}" ${style} />`].join("\n");
 		}
-		case "text": return `<text x="${shape.x}" y="${shape.y}" font-size="${shape.fontSize || DEFAULT_STYLES.fontSize}" font-family="${shape.fontFamily || DEFAULT_STYLES.fontFamily}" ${style}>${escapeXML(shape.text || "")}</text>`;
-		case "freehand": return `<path d="${shape.pathData || ""}" ${style} fill="none" />`;
+		case "text": return `<text x="${escapeAttr(shape.x)}" y="${escapeAttr(shape.y)}" font-size="${escapeAttr(shape.fontSize, DEFAULT_STYLES.fontSize)}" font-family="${escapeAttr(shape.fontFamily, DEFAULT_STYLES.fontFamily)}" ${style}>${escapeXML(shape.text || "")}</text>`;
+		case "freehand": return `<path d="${escapeAttr(shape.pathData, "")}" ${style} fill="none" />`;
 		default: return "";
 	}
 }
 /**
-* Escape XML entities for safe SVG text content.
+* Escape a value for safe use in an SVG/HTML attribute context.
+* Numeric values are coerced to numbers; string values are escaped
+* to prevent XSS via attribute injection through {@html}.
+*
+* @param {*} val - Value to escape/coerce
+* @param {number|string} [fallback=''] - Fallback if val is null/undefined
+* @returns {string}
+*/
+function escapeAttr(val, fallback = "") {
+	if (val == null) return String(fallback);
+	if (typeof val === "number") return String(val);
+	return String(val).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/'/g, "&apos;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+/**
+* Escape XML entities for safe SVG text content (text nodes, not attributes).
 * @param {string} s
 * @returns {string}
 */

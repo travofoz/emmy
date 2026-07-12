@@ -27,4 +27,4 @@ githubRepo.subscribe((value) => {
 /** True when both token and repo are configured. */
 var isConnected = derived([githubToken, githubRepo], ([$token, $repo]) => !!$token && !!$repo);
 //#endregion
-export { isConnected as n, githubRepo as t };
+export { githubToken as n, isConnected as r, githubRepo as t };
