@@ -4869,7 +4869,7 @@ var options = {
 		app: ({ head, body, assets, nonce, env }) => "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n	<meta charset=\"utf-8\" />\n	<link rel=\"icon\" href=\"" + assets + "/favicon.svg\" type=\"image/svg+xml\" />\n	<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n	" + head + "\n</head>\n<body data-sveltekit-prerender=\"true\">\n	<div style=\"display: contents\">" + body + "</div>\n</body>\n</html>\n",
 		error: error_template_default
 	},
-	version_hash: "1ygzs8i"
+	version_hash: "tiqsok"
 };
 async function get_hooks() {
 	let handle;
@@ -4890,4 +4890,4 @@ async function get_hooks() {
 	};
 }
 //#endregion
-export { public_env as C, run as S, set_public_env as T, set_read_implementation as _, attr_style as a, writable as b, store_get as c, html as d, getContext as f, set_manifest as g, read_implementation as h, attr_class as i, stringify as l, escape_html as m, options as n, derived as o, attr as p, index_server_exports as r, ensure_array_like as s, get_hooks as t, unsubscribe_stores as u, derived$1 as v, set_private_env as w, noop as x, readable as y };
+export { run as C, set_public_env as E, noop as S, set_private_env as T, set_manifest as _, attr_class as a, readable as b, ensure_array_like as c, unsubscribe_stores as d, html as f, read_implementation as g, escape_html as h, onDestroy as i, store_get as l, attr as m, options as n, attr_style as o, getContext as p, index_server_exports as r, derived as s, get_hooks as t, stringify as u, set_read_implementation as v, public_env as w, writable as x, derived$1 as y };

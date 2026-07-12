@@ -116,18 +116,10 @@ function renderShapeSVG(shape) {
 			const y1 = Number(shape.y) || 0;
 			const x2 = Number(shape.endX) || 0;
 			const y2 = Number(shape.endY) || 0;
-			const dx = x2 - x1;
-			const dy = y2 - y1;
-			const angle = Math.atan2(dy, dx);
-			const headLen = Math.min(12, Math.sqrt(dx * dx + dy * dy) * 0.3);
-			const headAngle = Math.PI / 6;
-			const hx1 = x2 - headLen * Math.cos(angle - headAngle);
-			const hy1 = y2 - headLen * Math.sin(angle - headAngle);
-			const hx2 = x2 - headLen * Math.cos(angle + headAngle);
-			const hy2 = y2 - headLen * Math.sin(angle + headAngle);
+			const points = arrowHead(x1, y1, x2, y2, Number(shape.strokeWidth) || 2);
 			return [
 				`<line x1="${escapeAttr(x1)}" y1="${escapeAttr(y1)}" x2="${escapeAttr(x2)}" y2="${escapeAttr(y2)}" ${style} />`,
-				`<polygon points="${escapeAttr(x2)},${escapeAttr(y2)} ${escapeAttr(hx1)},${escapeAttr(hy1)} ${escapeAttr(hx2)},${escapeAttr(hy2)}" ${style} />`
+				`<polygon points="${points}" ${style} />`
 			].join('\n');
 		}
 
@@ -256,6 +248,31 @@ export function createFreehand(pathData, style = {}) {
 		...DEFAULT_STYLES,
 		...style
 	};
+}
+
+/**
+ * Compute arrowhead polygon points string for SVG polygon points attribute.
+ * Scales the arrow head size proportionally to strokeWidth so thicker
+ * strokes get larger arrowheads. This is the canonical implementation;
+ * consumers should import this rather than duplicating the logic.
+ *
+ * @param {number} x1 - start x (tail)
+ * @param {number} y1 - start y (tail)
+ * @param {number} x2 - end x (head tip)
+ * @param {number} y2 - end y (head tip)
+ * @param {number} strokeWidth - line stroke width (affects head size)
+ * @returns {string} SVG points string, e.g. "100,100 90,95 90,105"
+ */
+export function arrowHead(x1, y1, x2, y2, strokeWidth) {
+	const angle = Math.atan2(y2 - y1, x2 - x1);
+	const baseLen = Math.min(12, Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) * 0.3);
+	const headLen = baseLen * (1 + (strokeWidth - 2) * 0.15);
+	const headAngle = Math.PI / 6;
+	const hx1 = x2 - headLen * Math.cos(angle - headAngle);
+	const hy1 = y2 - headLen * Math.sin(angle - headAngle);
+	const hx2 = x2 - headLen * Math.cos(angle + headAngle);
+	const hy2 = y2 - headLen * Math.sin(angle + headAngle);
+	return `${x2},${y2} ${hx1},${hy1} ${hx2},${hy2}`;
 }
 
 /**

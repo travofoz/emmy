@@ -1,5 +1,5 @@
 <script>
-	import { createRect, createArrow, createText, createFreehand, shapeId, DEFAULT_STYLES, isTransparent } from '$lib/annotations.js';
+	import { createRect, createArrow, createText, createFreehand, shapeId, DEFAULT_STYLES, isTransparent, arrowHead } from '$lib/annotations.js';
 
 	/** @type {import('$lib/annotations.js').AnnotationShape[]} */
 	let { shapes = $bindable([]), imageWidth, imageHeight, imageUrl, readonly = false } = $props();
@@ -364,30 +364,7 @@
 	</div>
 </div>
 
-<script context="module">
-	/**
-	 * Compute arrowhead polygon points.
-	 * Scales the arrow head size proportionally to strokeWidth so thicker
-	 * strokes get larger arrowheads.
-	 * @param {number} x1
-	 * @param {number} y1
-	 * @param {number} x2
-	 * @param {number} y2
-	 * @param {number} strokeWidth
-	 * @returns {string}
-	 */
-	function arrowHead(x1, y1, x2, y2, strokeWidth) {
-		const angle = Math.atan2(y2 - y1, x2 - x1);
-		const baseLen = Math.min(12, Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) * 0.3);
-		const headLen = baseLen * (1 + (strokeWidth - 2) * 0.15);
-		const headAngle = Math.PI / 6;
-		const hx1 = x2 - headLen * Math.cos(angle - headAngle);
-		const hy1 = y2 - headLen * Math.sin(angle - headAngle);
-		const hx2 = x2 - headLen * Math.cos(angle + headAngle);
-		const hy2 = y2 - headLen * Math.sin(angle + headAngle);
-		return `${x2},${y2} ${hx1},${hy1} ${hx2},${hy2}`;
-	}
-</script>
+
 
 <style>
 	.annotation-selected {

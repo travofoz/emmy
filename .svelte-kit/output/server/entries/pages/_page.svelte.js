@@ -1,4 +1,4 @@
-import { a as attr_style, c as store_get, d as html, i as attr_class, l as stringify, m as escape_html, o as derived, p as attr, s as ensure_array_like, u as unsubscribe_stores } from "../../chunks/internal.js";
+import { a as attr_class, c as ensure_array_like, d as unsubscribe_stores, f as html, h as escape_html, l as store_get, m as attr, o as attr_style, s as derived, u as stringify } from "../../chunks/internal.js";
 import { r as isConnected } from "../../chunks/stores.js";
 //#region src/lib/gallery.js
 /**
@@ -60,7 +60,11 @@ function renderAnnotationsSVG(annotations, imageWidth, imageHeight) {
 * @returns {string}
 */
 function renderShapeSVG(shape) {
-	const style = `stroke="${escapeAttr(shape.strokeColor, DEFAULT_STYLES.strokeColor)}" stroke-width="${escapeAttr(shape.strokeWidth, DEFAULT_STYLES.strokeWidth)}" fill="${escapeAttr(isTransparent(shape.fillColor) ? shape.type === "text" ? shape.strokeColor || DEFAULT_STYLES.strokeColor : "none" : shape.fillColor || "none")}" opacity="${escapeAttr(shape.opacity, DEFAULT_STYLES.opacity)}"`;
+	const stroke = escapeAttr(shape.strokeColor, DEFAULT_STYLES.strokeColor);
+	const strokeWidth = escapeAttr(shape.strokeWidth, DEFAULT_STYLES.strokeWidth);
+	const fill = escapeAttr(isTransparent(shape.fillColor) ? shape.type === "text" ? shape.strokeColor || DEFAULT_STYLES.strokeColor : "none" : shape.fillColor || "none");
+	const opacity = escapeAttr(shape.opacity, DEFAULT_STYLES.opacity);
+	const style = `stroke="${stroke}" stroke-width="${strokeWidth}" fill="${fill}" opacity="${opacity}"`;
 	switch (shape.type) {
 		case "rect": return `<rect x="${escapeAttr(shape.x)}" y="${escapeAttr(shape.y)}" width="${escapeAttr(shape.width)}" height="${escapeAttr(shape.height)}" ${style} />`;
 		case "arrow": {
@@ -68,18 +72,12 @@ function renderShapeSVG(shape) {
 			const y1 = Number(shape.y) || 0;
 			const x2 = Number(shape.endX) || 0;
 			const y2 = Number(shape.endY) || 0;
-			const dx = x2 - x1;
-			const dy = y2 - y1;
-			const angle = Math.atan2(dy, dx);
-			const headLen = Math.min(12, Math.sqrt(dx * dx + dy * dy) * .3);
-			const headAngle = Math.PI / 6;
-			const hx1 = x2 - headLen * Math.cos(angle - headAngle);
-			const hy1 = y2 - headLen * Math.sin(angle - headAngle);
-			const hx2 = x2 - headLen * Math.cos(angle + headAngle);
-			const hy2 = y2 - headLen * Math.sin(angle + headAngle);
-			return [`<line x1="${escapeAttr(x1)}" y1="${escapeAttr(y1)}" x2="${escapeAttr(x2)}" y2="${escapeAttr(y2)}" ${style} />`, `<polygon points="${escapeAttr(x2)},${escapeAttr(y2)} ${escapeAttr(hx1)},${escapeAttr(hy1)} ${escapeAttr(hx2)},${escapeAttr(hy2)}" ${style} />`].join("\n");
+			const points = arrowHead(x1, y1, x2, y2, Number(shape.strokeWidth) || 2);
+			return [`<line x1="${escapeAttr(x1)}" y1="${escapeAttr(y1)}" x2="${escapeAttr(x2)}" y2="${escapeAttr(y2)}" ${style} />`, `<polygon points="${points}" ${style} />`].join("\n");
 		}
-		case "text": return `<text x="${escapeAttr(shape.x)}" y="${escapeAttr(shape.y)}" font-size="${escapeAttr(shape.fontSize, DEFAULT_STYLES.fontSize)}" font-family="${escapeAttr(shape.fontFamily, DEFAULT_STYLES.fontFamily)}" ${style}>${escapeXML(shape.text || "")}</text>`;
+		case "text":
+			const textStyle = `stroke="none" fill="${fill}" opacity="${opacity}"`;
+			return `<text x="${escapeAttr(shape.x)}" y="${escapeAttr(shape.y)}" font-size="${escapeAttr(shape.fontSize, DEFAULT_STYLES.fontSize)}" font-family="${escapeAttr(shape.fontFamily, DEFAULT_STYLES.fontFamily)}" ${textStyle}>${escapeXML(shape.text || "")}</text>`;
 		case "freehand": return `<path d="${escapeAttr(shape.pathData, "")}" ${style} fill="none" />`;
 		default: return "";
 	}
@@ -105,6 +103,25 @@ function escapeAttr(val, fallback = "") {
 */
 function escapeXML(s) {
 	return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+/**
+* Compute arrowhead polygon points string for SVG polygon points attribute.
+* Scales the arrow head size proportionally to strokeWidth so thicker
+* strokes get larger arrowheads. This is the canonical implementation;
+* consumers should import this rather than duplicating the logic.
+*
+* @param {number} x1 - start x (tail)
+* @param {number} y1 - start y (tail)
+* @param {number} x2 - end x (head tip)
+* @param {number} y2 - end y (head tip)
+* @param {number} strokeWidth - line stroke width (affects head size)
+* @returns {string} SVG points string, e.g. "100,100 90,95 90,105"
+*/
+function arrowHead(x1, y1, x2, y2, strokeWidth) {
+	const angle = Math.atan2(y2 - y1, x2 - x1);
+	const headLen = Math.min(12, Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2) * .3) * (1 + (strokeWidth - 2) * .15);
+	const headAngle = Math.PI / 6;
+	return `${x2},${y2} ${x2 - headLen * Math.cos(angle - headAngle)},${y2 - headLen * Math.sin(angle - headAngle)} ${x2 - headLen * Math.cos(angle + headAngle)},${y2 - headLen * Math.sin(angle + headAngle)}`;
 }
 //#endregion
 //#region src/routes/+page.svelte
