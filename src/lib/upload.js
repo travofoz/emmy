@@ -34,26 +34,58 @@ export function generateImageId() {
 }
 
 /**
+ * Fallback image decoder using a DOM Image element.
+ * More robust for certain JPEG variants than createImageBitmap.
+ *
+ * @param {Blob|File} blob
+ * @returns {Promise<{width: number, height: number}>}
+ */
+function decodeViaImageElement(blob) {
+	return new Promise((resolve, reject) => {
+		const url = URL.createObjectURL(blob);
+		const img = new Image();
+		img.onload = () => {
+			URL.revokeObjectURL(url);
+			resolve({ width: img.naturalWidth, height: img.naturalHeight });
+		};
+		img.onerror = () => {
+			URL.revokeObjectURL(url);
+			reject(new Error('Failed to decode image'));
+		};
+		img.src = url;
+	});
+}
+
+/**
  * Resize an image to fit within maxDimension (longest edge) using Canvas API.
- * Preserves aspect ratio. Returns a blob.
+ * Preserves aspect ratio. Returns the processed blob and its dimensions.
  *
  * @param {File} file - The image file
  * @param {number} maxDimension - Max width or height in pixels (default 2000)
  * @param {number} quality - JPEG/WebP quality 0-1 (default 0.85)
- * @returns {Promise<Blob>}
+ * @returns {Promise<{blob: Blob|File, width: number, height: number}>}
  */
 export async function resizeImage(file, maxDimension = 2000, quality = 0.85) {
-	// For GIFs and small images, skip resize
-	if (file.type === 'image/gif') return file;
+	// For GIFs, skip resize entirely
+	if (file.type === 'image/gif') {
+		const dims = await decodeViaImageElement(file);
+		return { blob: file, ...dims };
+	}
 
-	const img = await createImageBitmap(file);
+	let img;
+	try {
+		img = await createImageBitmap(file);
+	} catch {
+		// Fallback for JPEGs that createImageBitmap can't decode
+		const dims = await decodeViaImageElement(file);
+		return { blob: file, ...dims };
+	}
+
 	let { width, height } = img;
 
 	if (width <= maxDimension && height <= maxDimension) {
-		// No resize needed — but still need to return a blob for consistent handling
-		// Use original file
 		img.close();
-		return file;
+		return { blob: file, width, height };
 	}
 
 	// Scale down so longest edge = maxDimension
@@ -73,16 +105,15 @@ export async function resizeImage(file, maxDimension = 2000, quality = 0.85) {
 	ctx.drawImage(img, 0, 0, width, height);
 	img.close();
 
-	return new Promise((resolve, reject) => {
+	const blob = await new Promise((resolve, reject) => {
 		canvas.toBlob(
-			(blob) => {
-				if (blob) resolve(blob);
-				else reject(new Error('Canvas toBlob failed'));
-			},
+			(b) => b ? resolve(b) : reject(new Error('Canvas toBlob failed')),
 			'image/jpeg',
 			quality
 		);
 	});
+
+	return { blob, width, height };
 }
 
 /**
@@ -158,14 +189,9 @@ export async function uploadImage(octokit, owner, repo, file, options = {}) {
 	const imagePath = `images/${filename}`;
 	const jsonPath = `images/${jsonFilename}`;
 
-	// Resize/compress
-	const processedBlob = await resizeImage(file);
+	// Resize/compress and get dimensions
+	const { blob: processedBlob, width, height } = await resizeImage(file);
 	const base64 = await blobToBase64(processedBlob);
-
-	// Get dimensions from the processed image
-	const img = await createImageBitmap(processedBlob);
-	const { width, height } = img;
-	img.close();
 
 	// Import putBinaryFile and putFile dynamically to avoid circular deps
 	const { putBinaryFile, putFile } = await import('./github.js');
