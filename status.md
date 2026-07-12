@@ -24,3 +24,14 @@
 [STAGE_INIT] 8:33:09 PM || Migrating 1_spec.md from vault to active execution slot.
 [PHASE_STATUS] 8:33:09 PM || === 1_spec | attempt 0 | per-task commits enabled ===
 [EXECUTION] 8:33:09 PM || Launching Headless Pi for Phase: 1_spec (Attempt 0)
+[EXECUTION] 8:37:23 PM || Pi tool-loop settled successfully.
+[AUDIT] 8:37:23 PM || Running split critic: build/lint/test, hard constraints, baseline review...
+[AUDIT_SUB] 8:37:23 PM || Running BUILD_LINT_TEST sub-audit — 2 independent samples...
+[AUDIT_SAMPLE_CLEAN] 8:38:54 PM || BUILD_LINT_TEST sample 1/2: clean.
+[AUDIT_MALFORMED] 8:40:12 PM || BUILD_LINT_TEST sample 2/2 did not emit a valid RESULT line (got: "Here is my complete audit:"). Treating as ISSUES.
+[AUDIT_SUB_ISSUES] 8:40:12 PM || BUILD_LINT_TEST: at least one of 2 independent samples flagged a problem — sub-audit fails on dissent.
+[AUDIT_SUB] 8:40:12 PM || Running HARD_CONSTRAINTS sub-audit — 2 independent samples...
+[LOCK] 8:43:25 PM || Stale pipeline.lock found (pid 21420 is not running — likely SIGKILL or a hard crash). Clearing it.
+[RESUME] 8:43:26 PM || Found orphaned current_phase.md from a previous run. Resuming phase: 1_spec
+[PHASE_STATUS] 8:43:26 PM || === 1_spec | attempt 0 | per-task commits enabled ===
+[EXECUTION] 8:43:26 PM || Launching Headless Pi for Phase: 1_spec (Attempt 0)
