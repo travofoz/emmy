@@ -46,8 +46,13 @@ export async function getFile(octokit, owner, repo, path) {
 		});
 		const data = resp.data;
 		if ('content' in data && 'sha' in data) {
+			const binaryStr = atob(data.content.replace(/\n/g, ''));
+			const bytes = new Uint8Array(binaryStr.length);
+			for (let i = 0; i < binaryStr.length; i++) {
+				bytes[i] = binaryStr.charCodeAt(i);
+			}
 			return {
-				content: Buffer.from(data.content, 'base64').toString('utf-8'),
+				content: new TextDecoder('utf-8').decode(bytes),
 				sha: data.sha
 			};
 		}
@@ -72,12 +77,19 @@ export async function getFile(octokit, owner, repo, path) {
  * @returns {Promise<{ sha: string, commit: object }>}
  */
 export async function putFile(octokit, owner, repo, path, content, message, sha) {
+	const bytes = new TextEncoder().encode(content);
+	let binaryStr = '';
+	for (let i = 0; i < bytes.byteLength; i++) {
+		binaryStr += String.fromCharCode(bytes[i]);
+	}
+	const base64Content = btoa(binaryStr);
+
 	const resp = await octokit.rest.repos.createOrUpdateFileContents({
 		owner,
 		repo,
 		path,
 		message,
-		content: Buffer.from(content, 'utf-8').toString('base64'),
+		content: base64Content,
 		sha
 	});
 	return {
