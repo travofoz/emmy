@@ -30,19 +30,26 @@
 		githubRepo.set(null);
 	}
 
+	function addToken() {
+		tokenInput = '';
+		repoInput = $githubRepo || '';
+		connectError = '';
+		showConnectModal = true;
+	}
+
+	let hasRepoWithoutToken = $derived(!!$githubRepo && !$githubToken);
+
 	function saveConnect(e) {
 		e.preventDefault();
 		connectError = '';
-		if (!tokenInput.trim()) {
-			connectError = 'Token is required.';
-			return;
-		}
 		if (!repoInput.trim() || !repoInput.trim().includes('/')) {
 			connectError = 'Enter a repo in "owner/repo" format.';
 			return;
 		}
-		githubToken.set(tokenInput.trim());
 		githubRepo.set(repoInput.trim());
+		if (tokenInput.trim()) {
+			githubToken.set(tokenInput.trim());
+		}
 		showConnectModal = false;
 	}
 </script>
@@ -54,10 +61,18 @@
 			<button class="text-xl font-bold cursor-pointer" onclick={() => goto('/')}>Emmy</button>
 		</div>
 		<div class="flex-none gap-2">
-			{#if $isConnected}
+			{#if $githubRepo}
 				<span class="text-sm text-base-content/60 hidden sm:inline">
 					{$githubRepo}
+					{#if !$githubToken}
+						<span class="badge badge-ghost badge-xs ml-1">read-only</span>
+					{/if}
 				</span>
+				{#if hasRepoWithoutToken}
+					<button class="btn btn-ghost btn-sm" onclick={addToken}>
+						Add Token
+					</button>
+				{/if}
 				<button class="btn btn-ghost btn-sm" onclick={disconnect}>
 					Disconnect
 				</button>
@@ -83,8 +98,11 @@
 
 			<div class="alert alert-info mb-4 text-sm">
 				<span>
-					Emmy uses a GitHub Personal Access Token (classic) with
-					<strong>repo</strong> scope to read and write files in your repository.
+					<strong>Read-only browsing works without a token.</strong> Just enter a public
+					repo name below — no authentication needed to view the gallery.
+					<br /><br />
+					To upload images, add annotations, or export GIFs, you'll also need a
+					GitHub Personal Access Token (classic) with <strong>repo</strong> scope.
 					The token is stored in your browser's localStorage and never sent anywhere
 					except directly to the GitHub API.
 					<br /><br />
@@ -95,33 +113,11 @@
 				</span>
 			</div>
 
-			<a
-				href="https://github.com/settings/tokens/new?scopes=repo&description=Emmy"
-				target="_blank"
-				rel="noopener noreferrer"
-				class="link link-primary text-sm mb-4 inline-block"
-			>
-				Generate a token on GitHub (opens new tab) →
-			</a>
-
 			{#if connectError}
 				<div class="alert alert-error text-sm mb-3">{connectError}</div>
 			{/if}
 
 			<div class="form-control mb-3">
-				<label class="label" for="gh-token-input">
-					<span class="label-text">GitHub Token</span>
-				</label>
-				<input
-					id="gh-token-input"
-					type="password"
-					bind:value={tokenInput}
-					placeholder="ghp_..."
-					class="input input-bordered w-full"
-				/>
-			</div>
-
-			<div class="form-control mb-4">
 				<label class="label" for="gh-repo-input">
 					<span class="label-text">Repository (owner/repo)</span>
 				</label>
@@ -132,6 +128,34 @@
 					placeholder="your-username/emmy"
 					class="input input-bordered w-full"
 				/>
+				<label class="label">
+					<span class="label-text-alt text-base-content/60">Required. The public repo to browse.</span>
+				</label>
+			</div>
+
+			<div class="form-control mb-4">
+				<label class="label" for="gh-token-input">
+					<span class="label-text">GitHub Token <span class="text-base-content/50">(optional for read-only)</span></span>
+				</label>
+				<input
+					id="gh-token-input"
+					type="password"
+					bind:value={tokenInput}
+					placeholder="ghp_... or leave blank to browse"
+					class="input input-bordered w-full"
+				/>
+				<label class="label">
+					<span class="label-text-alt">
+						<a
+							href="https://github.com/settings/tokens/new?scopes=repo&description=Emmy"
+							target="_blank"
+							rel="noopener noreferrer"
+							class="link link-primary text-xs"
+						>
+							Generate a token on GitHub (opens new tab) →
+						</a>
+					</span>
+				</label>
 			</div>
 
 			<div class="modal-action">

@@ -224,18 +224,22 @@ function gitCheckpoint(message) {
 }
 
 /**
- * Tolerant result parse for a sub-audit. Scans the head of the output for a
- * RESULT: CLEAN/ISSUES pattern, stripping common markdown noise (bullets, bold,
- * headers) the model might wrap around it despite instructions not to.
+ * Tolerant result parse for a sub-audit. Searches the WHOLE output for RESULT:
+ * CLEAN/ISSUES occurrences and takes the LAST match — investigative prompts
+ * naturally produce reasoning-then-conclusion, so the real verdict tends to land
+ * at the end of the response after a paragraph of findings, not the first line.
+ * Checking only the head (as this used to) missed the verdict entirely whenever
+ * the model's analysis ran past the first ~500 characters, which is common.
  * @param {string} output
  * @returns {{result: 'CLEAN'|'ISSUES'|'MALFORMED', firstLine: string}}
  */
 function parseAuditResult(output) {
+  const cleaned = output.replace(/[*_`>#-]/g, '');
+  const matches = [...cleaned.matchAll(/RESULT:\s*(CLEAN|ISSUES)/gi)];
   const firstLine = (output.split('\n')[0] || '').trim();
-  const head = output.slice(0, 500).replace(/[*_`>#-]/g, '');
-  const match = head.match(/RESULT:\s*(CLEAN|ISSUES)/i);
-  if (!match) return { result: 'MALFORMED', firstLine };
-  return { result: /** @type {'CLEAN'|'ISSUES'} */ (match[1].toUpperCase()), firstLine };
+  if (matches.length === 0) return { result: 'MALFORMED', firstLine };
+  const last = matches[matches.length - 1];
+  return { result: /** @type {'CLEAN'|'ISSUES'} */ (last[1].toUpperCase()), firstLine };
 }
 
 /**
@@ -288,11 +292,11 @@ function runPhaseToCompletion(originalPhaseName, originalSpecContent) {
     // combination of the three.
     log('AUDIT', 'Running split critic: build/lint/test, hard constraints, baseline review...');
 
-    const buildLintTestPrompt = `Identify what kind of project this is (package.json, build.gradle, Cargo.toml, pyproject.toml/requirements.txt, go.mod, or whatever else is present) and actually RUN the appropriate build, lint, and test commands using your tools, checking the workspace against this specification for context on what's being built:\n\n${phaseRequirements}\n\nReport exactly what you ran and its real output. Your output MUST start with exactly 'RESULT: CLEAN' if every command you ran succeeded with no errors or warnings that indicate broken functionality. If no build/lint/test tooling is configured or applicable yet for this project at this phase, note that plainly and still output 'RESULT: CLEAN' — absence of tooling is not itself a failure unless the spec explicitly required setting it up. If any command you ran actually failed, your output MUST start with exactly 'RESULT: ISSUES' followed by the real command output and what's broken.`;
+    const buildLintTestPrompt = `Identify what kind of project this is (package.json, build.gradle, Cargo.toml, pyproject.toml/requirements.txt, go.mod, or whatever else is present) and actually RUN the appropriate build, lint, and test commands using your tools, checking the workspace against this specification for context on what's being built:\n\n${phaseRequirements}\n\nReport exactly what you ran and its real output. When you're done investigating, end your response with exactly 'RESULT: CLEAN' on its own line if every command you ran succeeded with no errors or warnings that indicate broken functionality. If no build/lint/test tooling is configured or applicable yet for this project at this phase, note that plainly and still end with 'RESULT: CLEAN' — absence of tooling is not itself a failure unless the spec explicitly required setting it up. If any command you ran actually failed, end your response with exactly 'RESULT: ISSUES' on its own line, with the real command output and what's broken written above it.`;
 
-    const constraintPrompt = `Extract every explicit hard constraint from this specification — anything phrased as "must", "never", "always", "do not", "non-negotiable", "no X" — into a checklist, then verify each one INDIVIDUALLY against the actual codebase in the workspace using your tools (read files, grep, whatever's needed):\n\n${phaseRequirements}\n\nYour output MUST start with exactly 'RESULT: CLEAN' if every individual constraint holds. If even one is violated, your output MUST start with exactly 'RESULT: ISSUES' followed by, for each violation, the exact constraint quoted from the spec and the exact code that violates it.`;
+    const constraintPrompt = `Extract every explicit hard constraint from this specification — anything phrased as "must", "never", "always", "do not", "non-negotiable", "no X" — into a checklist, then verify each one INDIVIDUALLY against the actual codebase in the workspace using your tools (read files, grep, whatever's needed):\n\n${phaseRequirements}\n\nWhen you're done checking, end your response with exactly 'RESULT: CLEAN' on its own line if every individual constraint holds. If even one is violated, end your response with exactly 'RESULT: ISSUES' on its own line, with, for each violation, the exact constraint quoted from the spec and the exact code that violates it written above it.`;
 
-    const baselineReviewPrompt = `Act as a senior engineer doing a code review on the current codebase in the workspace, independent of any specific ticket or spec. Using your tools, check for:\n- Environment/platform correctness: infer the actual runtime target from the project itself (framework, adapter, presence/absence of a server) and flag any use of APIs that don't exist in that target (e.g. Node-only globals like Buffer, process, require, fs, __dirname in a browser/client-side project) — a passing build proves nothing here, since bundlers often don't error on this until real runtime execution.\n- Hardcoded values that should be resolved dynamically (hardcoded branch names, IDs, or URLs standing in for something obtainable via a real API or config lookup).\n- Security basics: secrets or tokens embedded in client-shipped code, unescaped user-controlled content, overly permissive auth/CORS patterns.\n- Common framework footguns (e.g. a <button> with no explicit type inside a <form> causing an implicit submit-and-reload, unhandled promise rejections around async calls, missing error/loading states around a user-triggered async action).\nThis list is illustrative, not exhaustive — apply the same reflexive standard you'd use in any real PR review, independent of whether the spec below happens to mention any of it. For context only, here is the phase specification:\n\n${phaseRequirements}\n\nYour output MUST start with exactly 'RESULT: CLEAN' if nothing above applies. If anything does, your output MUST start with exactly 'RESULT: ISSUES' followed by specifics: the exact file and why it's a problem.`;
+    const baselineReviewPrompt = `Act as a senior engineer doing a code review on the current codebase in the workspace, independent of any specific ticket or spec. Using your tools, check for:\n- Environment/platform correctness: infer the actual runtime target from the project itself (framework, adapter, presence/absence of a server) and flag any use of APIs that don't exist in that target (e.g. Node-only globals like Buffer, process, require, fs, __dirname in a browser/client-side project) — a passing build proves nothing here, since bundlers often don't error on this until real runtime execution.\n- Hardcoded values that should be resolved dynamically (hardcoded branch names, IDs, or URLs standing in for something obtainable via a real API or config lookup).\n- Security basics: secrets or tokens embedded in client-shipped code, unescaped user-controlled content, overly permissive auth/CORS patterns.\n- Common framework footguns (e.g. a <button> with no explicit type inside a <form> causing an implicit submit-and-reload, unhandled promise rejections around async calls, missing error/loading states around a user-triggered async action).\nThis list is illustrative, not exhaustive — apply the same reflexive standard you'd use in any real PR review, independent of whether the spec below happens to mention any of it. For context only, here is the phase specification:\n\n${phaseRequirements}\n\nWhen you're done checking, end your response with exactly 'RESULT: CLEAN' on its own line if nothing above applies. If anything does, end your response with exactly 'RESULT: ISSUES' on its own line, with specifics written above it: the exact file and why it's a problem.`;
 
     const subAudits = [
       { label: 'BUILD_LINT_TEST', prompt: buildLintTestPrompt },

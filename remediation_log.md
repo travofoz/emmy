@@ -1,0 +1,15 @@
+### Remediation 1
+
+## Tasks
+
+- [ ] **HARD_CONSTRAINTS: Decouple repo configuration from PAT requirement** — Allow the gallery to be browsed without entering a GitHub PAT. The connect modal must accept a repo name without a token for read-only mode. The `$githubRepo` store must be settable independently of `$githubToken`.
+- [ ] **HARD_CONSTRAINTS: Allow gallery loading without auth** — `src/routes/+page.svelte` must call `loadGallery()` even when `$githubRepo` is set but `$githubToken` is empty. The `loadGallery()` call must work with a read-only Octokit client (unauthenticated or with a minimal anonymous client) when only browsing public repo data.
+- [ ] **HARD_CONSTRAINTS: Gate write-only UI behind PAT, not gallery browsing** — The upload, annotate, edit, and delete UI sections must be hidden/gated behind `$isConnected`, but the gallery grid and detail view must render for any visitor who provides a repo name (without a token).
+- [ ] **BASELINE_REVIEW: Fix deploy workflow branch trigger** — Change `.github/workflows/deploy.yml` branch trigger from `[master]` to `[main, master]` (or `[main]` to match the README) so the Action fires for repos using either naming convention.
+- [ ] **BASELINE_REVIEW: Make GIF tags user-configurable** — Replace the hardcoded `tags: ['gif']` default in `src/routes/slideshow/+page.svelte` with a user-editable input so tags can be set at export time (or derived from source slide data).
+- [ ] **BASELINE_REVIEW: Escape shape attribute values in SVG rendering** — In `src/lib/annotations.js` (`renderShapeSVG`), coerce or escape all interpolated attribute values (`x`, `y`, `width`, `height`, `endX`, `endY`, `strokeColor`, `strokeWidth`, `fillColor`, `opacity`) to prevent XSS through `{@html}`. Ensure numeric coordinates are cast to numbers and string color/opacity values are escaped.
+- [ ] **BASELINE_REVIEW: Replace dynamic import of `getFile` with static import** — In `src/routes/+page.svelte`, move `getFile` from the runtime `await import('$lib/github.js')` call inside `handleEditSave` to the static import block at the top of the file.
+- [ ] **BASELINE_REVIEW: Guard `handleKeydown` against input element focus** — In `src/lib/components/AnnotationEditor.svelte`, add a guard at the top of `handleKeydown` that returns early when `e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'`, so that Backspace/Delete does not delete a selected shape while the user is editing text in the text input popup.
+- [ ] **BASELINE_REVIEW: Dismiss text input popup on tool switch** — In `src/lib/components/AnnotationEditor.svelte`, ensure that switching tools (clicking Rectangle, Arrow, Text, etc.) sets `showTextInput = false` so the text input popup is closed.
+- [ ] **BASELINE_REVIEW: Fix delete button logic inconsistency** — In `src/routes/+page.svelte`, remove the `closeDetail()` call from the modal delete button's `onclick` handler (or restructure the handler) so that `handleDelete`'s internal guard (`if (detailEntry?.id === id) closeDetail()`) is not dead code, and the modal close happens consistently after deletion.
+
