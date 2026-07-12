@@ -2852,8 +2852,6 @@ function derived$1(stores, fn, initial_value) {
 		};
 	});
 }
-//#endregion
-//#region node_modules/svelte/src/utils.js
 /**
 * Attributes that are boolean, i.e. they are present or not present.
 */
@@ -4055,6 +4053,14 @@ var SSRState = class {
 	}
 };
 //#endregion
+//#region node_modules/svelte/src/internal/server/blocks/html.js
+/**
+* @param {string} value
+*/
+function html(value) {
+	return "<!---->" + String(value ?? "") + "<!---->";
+}
+//#endregion
 //#region node_modules/svelte/src/internal/server/dev.js
 function get_user_code_location() {
 	return get_stack().filter((line) => line.trim().startsWith("at ")).map((line) => line.replace(/\((.*):\d+:\d+\)$/, (_, file) => `(${file})`)).join("\n");
@@ -4108,6 +4114,21 @@ function attributes(attrs, css_hash, classes, styles, flags = 0) {
 		attr_str += attr(name, value, is_html && is_boolean_attribute(name));
 	}
 	return attr_str;
+}
+/**
+* @param {unknown} value
+* @returns {string}
+*/
+function stringify(value) {
+	return typeof value === "string" ? value : value == null ? "" : value + "";
+}
+/**
+* @param {any} value
+* @param {Record<string,any>|[Record<string,any>,Record<string,any>]} [directives]
+*/
+function attr_style(value, directives) {
+	var result = to_style(value, directives);
+	return result ? ` style="${escape_html(result, true)}"` : "";
 }
 /**
 * @template V
@@ -4168,4 +4189,4 @@ function derived(fn) {
 	};
 }
 //#endregion
-export { LEGACY_PROPS as $, clear_text_content as A, pop$1 as B, writable as C, set_active_effect as D, get as E, mutable_source as F, set_hydrate_node as G, async_mode_flag as H, set as I, lifecycle_double_unmount as J, set_hydrating as K, flushSync as L, get_first_child as M, get_next_sibling as N, set_active_reaction as O, init_operations as P, experimental_async_required as Q, boundary as R, readable as S, active_reaction as T, hydrate_node as U, push$1 as V, hydrating as W, HYDRATION_ERROR as X, state_proxy_unmount as Y, hydration_failed as Z, getAbortSignal as _, unsubscribe_stores as a, is_passive_event as b, createContext as c, hasContext as d, STATE_SYMBOL as et, setContext as f, lifecycle_function_unavailable as g, hydratable_serialization_failed as h, store_get as i, run as it, create_text as j, component_root as k, getAllContexts as l, hydratable_clobbering as m, ensure_array_like as n, define_property as nt, get_user_code_location as o, ssr_context as p, hydration_mismatch as q, render as r, noop as rt, get_render_context as s, derived as t, array_from as tt, getContext as u, attr as v, active_effect as w, derived$1 as x, escape_html as y, component_context as z };
+export { HYDRATION_ERROR as $, set_active_effect as A, flushSync as B, is_passive_event as C, active_effect as D, writable as E, get_first_child as F, async_mode_flag as G, component_context as H, get_next_sibling as I, set_hydrate_node as J, hydrate_node as K, init_operations as L, component_root as M, clear_text_content as N, active_reaction as O, create_text as P, state_proxy_unmount as Q, mutable_source as R, escape_html as S, readable as T, pop$1 as U, boundary as V, push$1 as W, hydration_mismatch as X, set_hydrating as Y, lifecycle_double_unmount as Z, hydratable_clobbering as _, store_get as a, define_property as at, getAbortSignal as b, get_user_code_location as c, createContext as d, hydration_failed as et, getAllContexts as f, ssr_context as g, setContext as h, render as i, array_from as it, set_active_reaction as j, get as k, html as l, hasContext as m, derived as n, LEGACY_PROPS as nt, stringify as o, noop as ot, getContext as p, hydrating as q, ensure_array_like as r, STATE_SYMBOL as rt, unsubscribe_stores as s, run as st, attr_style as t, experimental_async_required as tt, get_render_context as u, hydratable_serialization_failed as v, derived$1 as w, attr as x, lifecycle_function_unavailable as y, set as z };
