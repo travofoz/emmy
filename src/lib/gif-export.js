@@ -13,6 +13,8 @@
  */
 
 import { renderAnnotationsSVG, isTransparent } from '$lib/annotations.js';
+import { putBinaryFile, putFile, getDefaultBranch } from './github.js';
+import { generateImageId, buildMetadata, blobToBase64 } from './upload.js';
 
 /** @typedef {import('$lib/annotations.js').AnnotationShape} AnnotationShape */
 
@@ -301,9 +303,7 @@ export async function encodeGIF(slides, options = {}) {
  */
 export async function exportAndCommitGIF(octokit, owner, repo, slides, options = {}) {
 	const { tags = [], caption = '', scale } = options;
-	const { putBinaryFile, putFile, getDefaultBranch } = await import('./github.js');
 	const branch = await getDefaultBranch(octokit, owner, repo);
-	const { generateImageId, buildMetadata, blobToBase64 } = await import('./upload.js');
 
 	const id = generateImageId();
 	const gifFilename = `${id}.gif`;

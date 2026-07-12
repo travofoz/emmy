@@ -13,6 +13,8 @@
  * to rebuild a single index.json — the data model supports either approach.
  */
 
+import { putBinaryFile, putFile, getDefaultBranch } from './github.js';
+
 /**
  * Generate a short random suffix (6 alphanumeric chars) for unique IDs.
  * @returns {string}
@@ -193,8 +195,6 @@ export async function uploadImage(octokit, owner, repo, file, options = {}) {
 	const { blob: processedBlob, width, height } = await resizeImage(file);
 	const base64 = await blobToBase64(processedBlob);
 
-	// Import dynamically to avoid circular deps
-	const { putBinaryFile, putFile, getDefaultBranch } = await import('./github.js');
 	const branch = await getDefaultBranch(octokit, owner, repo);
 
 	// Commit image file first
